@@ -15,6 +15,8 @@ package io.journalkeeper.persistence.local.metadata;
 
 import com.google.gson.Gson;
 import io.journalkeeper.persistence.MetadataPersistence;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
@@ -26,6 +28,7 @@ import java.nio.file.Path;
  * JSON 双写元数据，避免写入过程中损坏。
  */
 public class JsonDoubleCopiesPersistence implements MetadataPersistence {
+    private static final Logger logger = LoggerFactory.getLogger(JsonDoubleCopiesPersistence.class);
     static final String FIRST_COPY = ".0.json";
     static final String SECOND_COPY = ".1.json";
     private static final Gson gson = new Gson();
@@ -47,10 +50,16 @@ public class JsonDoubleCopiesPersistence implements MetadataPersistence {
 
     @Override
     public <M> M load(Path path, Class<M> mClass) throws IOException {
+        M object = null;
         try {
-            return gson.fromJson(new String(Files.readAllBytes(getCopy(path, FIRST_COPY)), StandardCharsets.UTF_8), mClass);
+            object = gson.fromJson(new String(Files.readAllBytes(getCopy(path, FIRST_COPY)), StandardCharsets.UTF_8), mClass);
         } catch (Throwable ignored) {
-            return gson.fromJson(new String(Files.readAllBytes(getCopy(path, SECOND_COPY)), StandardCharsets.UTF_8), mClass);
+            logger.error("Deserialize first copy error. ", ignored);
+        } finally {
+            if (null == object) {
+                object = gson.fromJson(new String(Files.readAllBytes(getCopy(path, SECOND_COPY)), StandardCharsets.UTF_8), mClass);
+            }
+            return object;
         }
     }
 }
