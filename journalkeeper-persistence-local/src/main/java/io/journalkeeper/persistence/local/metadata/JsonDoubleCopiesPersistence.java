@@ -54,7 +54,7 @@ public class JsonDoubleCopiesPersistence implements MetadataPersistence {
         try {
             object = gson.fromJson(new String(Files.readAllBytes(getCopy(path, FIRST_COPY)), StandardCharsets.UTF_8), mClass);
         } catch (Throwable ignored) {
-            logger.error("Deserialize first copy error. ", ignored);
+            logger.warn("Deserialize state from first copy file error. Try to deserialize from second copy file.", ignored);
         } finally {
             if (null == object) {
                 object = gson.fromJson(new String(Files.readAllBytes(getCopy(path, SECOND_COPY)), StandardCharsets.UTF_8), mClass);
